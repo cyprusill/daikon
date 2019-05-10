@@ -22,7 +22,6 @@ def compute_lengths(sequences):
 
 
 def define_computation_graph(source_vocab_size: int, target_vocab_size: int, batch_size: int):
-
     tf.reset_default_graph()
 
     # Placeholders for inputs and outputs
@@ -39,7 +38,12 @@ def define_computation_graph(source_vocab_size: int, target_vocab_size: int, bat
         decoder_inputs_embedded = tf.nn.embedding_lookup(target_embedding, decoder_inputs)
 
     with tf.variable_scope("Encoder"):
-        encoder_cell = tf.contrib.rnn.LSTMCell(C.HIDDEN_SIZE)
+        cells = []
+        for n in range(2):
+            cell = tf.contrib.rnn.LSTMCell(C.HIDDEN_SIZE)
+            cell = tf.contrib.rnn.DropoutWrapper(cell=cell, output_keep_prob=0.5)
+            cells.append(cell)
+        encoder_cell = tf.contrib.rnn.MultiRNNCell(cells)
         initial_state = encoder_cell.zero_state(batch_size, tf.float32)
 
         encoder_outputs, encoder_final_state = tf.nn.dynamic_rnn(encoder_cell,
@@ -48,7 +52,12 @@ def define_computation_graph(source_vocab_size: int, target_vocab_size: int, bat
                                                                  dtype=tf.float32)
 
     with tf.variable_scope("Decoder"):
-        decoder_cell = tf.contrib.rnn.LSTMCell(C.HIDDEN_SIZE)
+        cells = []
+        for n in range(2):
+            cell = tf.contrib.rnn.LSTMCell(C.HIDDEN_SIZE)
+            cell = tf.contrib.rnn.DropoutWrapper(cell=cell, output_keep_prob=0.5)
+            cells.append(cell)
+        decoder_cell = tf.contrib.rnn.MultiRNNCell(cells)
         decoder_outputs, decoder_final_state = tf.nn.dynamic_rnn(decoder_cell,
                                                                  decoder_inputs_embedded,
                                                                  initial_state=encoder_final_state,
